@@ -141,7 +141,7 @@ def rebuild_word(text, graph, threshold):
 
 df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
 
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, threshold=0.2))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, threshold=0.2))
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
 print(df_train.tail())
 
