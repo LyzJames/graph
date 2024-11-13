@@ -8,10 +8,30 @@ import re
 import nltk
 from nltk.corpus import stopwords
 
-splits = {'train': 'split/train-00000-of-00001.parquet', 'validation': 'split/validation-00000-of-00001.parquet', 'test': 'split/test-00000-of-00001.parquet'}
-df_train = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["train"])
-df_validation = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["validation"])
-df_test= pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["test"])
+data = pd.read_parquet("hf://datasets/dair-ai/emotion/unsplit/train-00000-of-00001.parquet")
+df_list = []
+db = data.copy()
+
+for num in [3000,1000,6000]:
+  # Split the data based on label values
+  sadness_data = db[db['label'] == 0].iloc[:num]
+  joy_data = db[db['label'] == 1].iloc[:num]
+  love_data = db[db['label'] == 2].iloc[:num]
+  anger_data = db[db['label'] == 3].iloc[:num]
+  fear_data = db[db['label'] == 4].iloc[:num]
+  surprise_data = db[db['label'] == 5].iloc[:num]
+
+  # Combine the data into a single DataFrame
+  df = pd.concat([sadness_data, joy_data, love_data, anger_data, fear_data, surprise_data])
+
+  # Remove the sampled data from the original dataset
+  db = db.drop(df.index)
+
+  df_list.append(df)
+
+df_test = df_list[0].sample(frac=1, random_state=42).reset_index(drop=True)
+df_validation = df_list[1].sample(frac=1, random_state=42).reset_index(drop=True)
+df_train = df_list[2].sample(frac=1, random_state=42).reset_index(drop=True)
 
 G = nx.DiGraph()
 G2 = nx.DiGraph()
