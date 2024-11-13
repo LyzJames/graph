@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import networkx as nx
 from tqdm import tqdm
+import re
+import nltk
+from nltk.corpus import stopwords
 
 splits = {'train': 'split/train-00000-of-00001.parquet', 'validation': 'split/validation-00000-of-00001.parquet', 'test': 'split/test-00000-of-00001.parquet'}
 df_train = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["train"])
@@ -12,9 +14,11 @@ df_validation = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["valid
 df_test= pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["test"])
 
 G = nx.DiGraph()
+G2 = nx.DiGraph()
 
-print(df_train.head())
+print(df_train.tail())
 word_count = {}
+word_count2 = {}
 
 def Graph(df, graph, word_count):
     for text in tqdm(df['text'], desc="Processing texts", unit="text"):
@@ -95,6 +99,7 @@ def get_edge_weight(graph, node1, node2):
         return graph[node1][node2]['weight']  
     else:
         return 0
+    
 
 def get_node_degree(graph, node):
     return (graph.in_degree(node), graph.out_degree(node)) 
@@ -115,19 +120,73 @@ def rebuild_word(text, graph, threshold):
         #relative_rate = min(edge_weight/get_node_degree(graph, node1)[1],edge_weight/get_node_degree(graph, node2)[0])
         if edge_weight != 0 and min(edge_weight/graph.nodes[node1].get('out_weight'),edge_weight/graph.nodes[node2].get('in_weight')) >= threshold:
             #print(edge_weight,graph.nodes[node1].get('out_weight'),graph.nodes[node2].get('in_weight'))
-            merged_word += f"{node1} {node2} "
+            if  merged_word == '':
+                merged_word += f"{node1}{node2}"
+            
+                #i += 1
+            else:
+                merged_word += f"{node2}" 
+                #i += 1
+        else:
+            if merged_word != '':
+                new_words.append(f'({str(merged_word)})')
+                #pass
+            else:
+                merged_word+= f"{node1}"
+                new_words.append(f'({str(merged_word)})')
+            merged_word = ""
+        i += 1
+    
+    
+
+    if i == len(text) - 1:
+        new_words.append(f'({text[-1]})')
+    
+    return new_words
+'''
+    if new_words:
+
+        for j in range(len(new_words) - 1):
+            format_words += str(new_words[j]).strip(' ').lstrip(' ')
+        
+        
+        format_words += str(new_words[-1])
+        format_words = format_words.strip(' ').lstrip(' ')
+    return format_words
+  '''  
+'''
+def rebuild_word(text, graph, threshold1):
+    text = text.split(" ")
+    new_words = []
+    format_words = ''
+    i = 0
+    j = 0
+    merged_word = ''
+    while i < len(text) - 1:
+        node1 = text[i]
+        node2 = text[i + 1]
+        
+        edge_weight = get_edge_weight(graph, node1, node2)
+        
+        #relative_rate = min(edge_weight/get_node_degree(graph, node1)[1],edge_weight/get_node_degree(graph, node2)[0])
+        if edge_weight != 0 and min(edge_weight/graph.nodes[node1].get('out_weight'),edge_weight/graph.nodes[node2].get('in_weight')) >= threshold1:
+            #print(edge_weight,graph.nodes[node1].get('out_weight'),graph.nodes[node2].get('in_weight'))
+            
+            #merged_word += f"{node1} {node2} "
             
             i += 2  
         else:
             
             merged_word+= f"{node1}"
-            new_words.append(f'({str(merged_word)})')
+            new_words.append(f'{str(merged_word)}')
             merged_word = ''
             i += 1
     
     
     if i == len(text) - 1:
-        new_words.append(f'({text[-1]})')
+        new_words.append(f'{text[-1]}')
+
+    
     
     if new_words:
 
@@ -138,10 +197,37 @@ def rebuild_word(text, graph, threshold):
         format_words += str(new_words[-1])
         format_words = format_words.strip(' ').lstrip(' ')
     return format_words
+'''
+df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.05))
 
-df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+'''
+Graph(df_train,G2,word_count2)
 
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, threshold=0.1))
+df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
+
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
+'''
 print(df_train.tail())
+nltk.download('stopwords')
 
+
+stop_words = set(stopwords.words('english'))
+
+# 定义函数：移除文本中的停用词
+def remove_stopwords(text):
+    # 将文本拆分为单词
+    words = text
+    # 过滤掉停用词
+    filtered_words = [word for word in words if word[1:-1].lower() not in stop_words]
+    
+    return " ".join(filtered_words)
+
+df_train['text'] = df_train['text'].apply(remove_stopwords)
+df_validation['text'] = df_validation['text'].apply(remove_stopwords)
+df_test['text'] = df_test['text'].apply(remove_stopwords)
+
+
+print(df_train.tail())
