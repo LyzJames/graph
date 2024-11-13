@@ -1,37 +1,13 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow as tf
 import networkx as nx
 from tqdm import tqdm
-import re
 import nltk
 from nltk.corpus import stopwords
 
-data = pd.read_parquet("hf://datasets/dair-ai/emotion/unsplit/train-00000-of-00001.parquet")
-df_list = []
-db = data.copy()
-
-for num in [3000,1000,6000]:
-  # Split the data based on label values
-  sadness_data = db[db['label'] == 0].iloc[:num]
-  joy_data = db[db['label'] == 1].iloc[:num]
-  love_data = db[db['label'] == 2].iloc[:num]
-  anger_data = db[db['label'] == 3].iloc[:num]
-  fear_data = db[db['label'] == 4].iloc[:num]
-  surprise_data = db[db['label'] == 5].iloc[:num]
-
-  # Combine the data into a single DataFrame
-  df = pd.concat([sadness_data, joy_data, love_data, anger_data, fear_data, surprise_data])
-
-  # Remove the sampled data from the original dataset
-  db = db.drop(df.index)
-
-  df_list.append(df)
-
-df_test = df_list[0].sample(frac=1, random_state=42).reset_index(drop=True)
-df_validation = df_list[1].sample(frac=1, random_state=42).reset_index(drop=True)
-df_train = df_list[2].sample(frac=1, random_state=42).reset_index(drop=True)
+splits = {'train': 'split/train-00000-of-00001.parquet', 'validation': 'split/validation-00000-of-00001.parquet', 'test': 'split/test-00000-of-00001.parquet'}
+df_train = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["train"])
+df_validation = pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["validation"])
+df_test= pd.read_parquet("hf://datasets/dair-ai/emotion/" + splits["test"])
 
 G = nx.DiGraph()
 G2 = nx.DiGraph()
@@ -93,26 +69,12 @@ def remove_low_out_degree_nodes(graph, threshold):
     return graph
 threshold = 1
 
-
-
-
 #remove_low_out_degree_nodes(G, threshold)
-
 max_node = max(G.nodes(data=True), key=lambda x: x[1].get('count'))  
-
 
 edges = G.edges(data=True)
 max_edge_weight = max(edges, key=lambda x: x[2].get('weight'))
 min_edge_weight = min(edges, key=lambda x: x[2].get('weight'))
-'''
-# print result
-print("Nodes:",  len(G.nodes(data=True)))
-print("Edges:", len(G.edges(data=True)))
-print(f"max node value: {max_node[0]} (count: {max_node[1].get('count', 'N/A')})")
-print(f"max edge value: {max_edge_weight[0]} -> {max_edge_weight[1]} (weight: {max_edge_weight[2]['weight']})")
-print(f"min edge value: {min_edge_weight[0]} -> {min_edge_weight[1]} (weight: {min_edge_weight[2]['weight']})")
-'''
-
 
 def get_edge_weight(graph, node1, node2):
     if graph.has_edge(node1, node2):
@@ -156,83 +118,19 @@ def rebuild_word(text, graph, threshold):
                 new_words.append(f'({str(merged_word)})')
             merged_word = ""
         i += 1
-    
-    
 
     if i == len(text) - 1:
         new_words.append(f'({text[-1]})')
     
     return new_words
-'''
-    if new_words:
 
-        for j in range(len(new_words) - 1):
-            format_words += str(new_words[j]).strip(' ').lstrip(' ')
-        
-        
-        format_words += str(new_words[-1])
-        format_words = format_words.strip(' ').lstrip(' ')
-    return format_words
-  '''  
-'''
-def rebuild_word(text, graph, threshold1):
-    text = text.split(" ")
-    new_words = []
-    format_words = ''
-    i = 0
-    j = 0
-    merged_word = ''
-    while i < len(text) - 1:
-        node1 = text[i]
-        node2 = text[i + 1]
-        
-        edge_weight = get_edge_weight(graph, node1, node2)
-        
-        #relative_rate = min(edge_weight/get_node_degree(graph, node1)[1],edge_weight/get_node_degree(graph, node2)[0])
-        if edge_weight != 0 and min(edge_weight/graph.nodes[node1].get('out_weight'),edge_weight/graph.nodes[node2].get('in_weight')) >= threshold1:
-            #print(edge_weight,graph.nodes[node1].get('out_weight'),graph.nodes[node2].get('in_weight'))
-            
-            #merged_word += f"{node1} {node2} "
-            
-            i += 2  
-        else:
-            
-            merged_word+= f"{node1}"
-            new_words.append(f'{str(merged_word)}')
-            merged_word = ''
-            i += 1
-    
-    
-    if i == len(text) - 1:
-        new_words.append(f'{text[-1]}')
-
-    
-    
-    if new_words:
-
-        for j in range(len(new_words) - 1):
-            format_words += str(new_words[j]).strip(' ').lstrip(' ') + ' '
-        
-        
-        format_words += str(new_words[-1])
-        format_words = format_words.strip(' ').lstrip(' ')
-    return format_words
-'''
 df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.05))
 
 df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.05))
 df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.05))
-'''
-Graph(df_train,G2,word_count2)
 
-df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
-
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
-'''
 print(df_train.tail())
 nltk.download('stopwords')
-
 
 stop_words = set(stopwords.words('english'))
 
