@@ -76,7 +76,11 @@ def Graph(df, graph, word_count):
 
 
     for word, count in word_count.items():
-        graph.nodes[word]['count'] = count
+        if word in graph.nodes:
+            graph.nodes[word]['count'] = count
+        else:
+          print(word)
+          graph.nodes[word]['count'] = count
 
 Graph(df_train,G,word_count)
 
