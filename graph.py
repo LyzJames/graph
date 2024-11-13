@@ -46,48 +46,42 @@ def Graph(df, graph, word_count):
             else:
                 word_count[word] = 1
         
+        if len(words) == 1:
+            graph.add_node(words[0])
+            graph.nodes[words[0]]['out_weight'] = 0
+            graph.nodes[words[0]]['in_weight'] = 0
+          
         for i in range(len(words) - 1):
             source = words[i]
             target = words[i + 1]
-            
 
             if source not in graph.nodes:
                 graph.add_node(source)
                 graph.nodes[source]['out_weight'] = 0
                 graph.nodes[source]['in_weight'] = 0
             
-
             if target not in graph.nodes:
                 graph.add_node(target)
                 graph.nodes[target]['out_weight'] = 0
                 graph.nodes[target]['in_weight'] = 0
             
-
             if graph.has_edge(source, target):
                 graph[source][target]['weight'] += 1
             else:
                 graph.add_edge(source, target, weight=1)
 
-
             graph.nodes[source]['out_weight'] += 1
             
-
             graph.nodes[target]['in_weight'] += 1
 
-
     for word, count in word_count.items():
-        if word in graph.nodes:
-            graph.nodes[word]['count'] = count
-        else:
-          print(word)
-          graph.nodes[word]['count'] = count
+        graph.nodes[word]['count'] = count
 
 Graph(df_train,G,word_count)
 
 def remove_low_out_degree_nodes(graph, threshold):
     
     low_out_degree_nodes = [node for node in graph.nodes if graph.out_degree(node) < threshold]
-    
     
     graph.remove_nodes_from(low_out_degree_nodes)
     return graph
@@ -106,7 +100,6 @@ def get_edge_weight(graph, node1, node2):
     else:
         return 0
     
-
 def get_node_degree(graph, node):
     return (graph.in_degree(node), graph.out_degree(node)) 
 
