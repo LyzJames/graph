@@ -4,9 +4,9 @@ from tqdm import tqdm
 import nltk
 from nltk.corpus import stopwords
 
-data = pd.read_parquet("hf://datasets/dair-ai/emotion/unsplit/train-00000-of-00001.parquet")
+data_unsplit = pd.read_parquet("hf://datasets/dair-ai/emotion/unsplit/train-00000-of-00001.parquet")
 df_list = []
-db = data.copy()
+db = data_unsplit.copy()
 
 for num in [3000,1000,6000]:
   # Split the data based on label values
@@ -30,13 +30,9 @@ df_validation = df_list[1].sample(frac=1, random_state=42).reset_index(drop=True
 df_train = df_list[2].sample(frac=1, random_state=42).reset_index(drop=True)
 
 G = nx.DiGraph()
-G1 = nx.DiGraph()
-G2 = nx.DiGraph()
 
-print(df_train.tail())
+print(df_train.head())
 word_count = {}
-word_count1 = {}
-word_count2 = {}
 
 def Graph(df, graph, word_count):
     for text in tqdm(df['text'], desc="Processing texts", unit="text"):
@@ -79,9 +75,7 @@ def Graph(df, graph, word_count):
     for word, count in word_count.items():
         graph.nodes[word]['count'] = count
 
-Graph(df_train,G,word_count)
-Graph(df_validation,G1,word_count1)
-Graph(df_test,G2,word_count2)
+Graph(pd.concat([df_train, df_test, df_validation]),G,word_count)
 
 def remove_low_out_degree_nodes(graph, threshold):
     
@@ -146,11 +140,9 @@ def rebuild_word(text, graph, threshold):
     return new_words
 
 df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.05))
 
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G1, 0.05))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
-
-print(df_train.tail())
 nltk.download('stopwords')
 
 stop_words = set(stopwords.words('english'))
@@ -169,4 +161,4 @@ df_validation['text'] = df_validation['text'].apply(remove_stopwords)
 df_test['text'] = df_test['text'].apply(remove_stopwords)
 
 
-print(df_train.tail())
+print(df_train.head())
