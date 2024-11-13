@@ -30,10 +30,12 @@ df_validation = df_list[1].sample(frac=1, random_state=42).reset_index(drop=True
 df_train = df_list[2].sample(frac=1, random_state=42).reset_index(drop=True)
 
 G = nx.DiGraph()
+G1 = nx.DiGraph()
 G2 = nx.DiGraph()
 
 print(df_train.tail())
 word_count = {}
+word_count1 = {}
 word_count2 = {}
 
 def Graph(df, graph, word_count):
@@ -78,6 +80,8 @@ def Graph(df, graph, word_count):
         graph.nodes[word]['count'] = count
 
 Graph(df_train,G,word_count)
+Graph(df_validation,G1,word_count1)
+Graph(df_test,G2,word_count2)
 
 def remove_low_out_degree_nodes(graph, threshold):
     
@@ -143,8 +147,8 @@ def rebuild_word(text, graph, threshold):
 
 df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.05))
 
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.05))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G1, 0.05))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G2, 0.05))
 
 print(df_train.tail())
 nltk.download('stopwords')
