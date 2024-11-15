@@ -128,6 +128,6 @@ def Graph_Based_Processing(df_train, df_validation, df_test):
     df_test['text'] = df_test['text'].apply(remove_stopwords)
 
     print(df_train.head())
-
+return df_train, df_validation, df_test
 # Example usage:
 # Graph_Based_Processing(df_train, df_validation, df_test)
