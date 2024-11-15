@@ -24,10 +24,10 @@ for num in [3000,1000,6000]:
   db = db.drop(df.index)
 
   df_list.append(df)
-
-df_test = df_list[0].reset_index(drop=True)
-df_validation = df_list[1].reset_index(drop=True)
-df_train = df_list[2].reset_index(drop=True)
+  
+df_test = df_list[0].sample(frac=1, random_state=42).reset_index(drop=True)
+df_validation = df_list[1].sample(frac=1, random_state=42).reset_index(drop=True)
+df_train = df_list[2].sample(frac=1, random_state=42).reset_index(drop=True)
 
 G = nx.DiGraph()
 
