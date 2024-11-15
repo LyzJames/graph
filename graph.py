@@ -139,9 +139,9 @@ def rebuild_word(text, graph, threshold):
     
     return new_words
 
-df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.05))
-df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.05))
-df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.05))
+df_train['text'] = df_train['text'].apply(lambda x: rebuild_word(x, G, 0.1))
+df_validation['text'] = df_validation['text'].apply(lambda x: rebuild_word(x, G, 0.1))
+df_test['text'] = df_test['text'].apply(lambda x: rebuild_word(x, G, 0.1))
 
 nltk.download('stopwords')
 
